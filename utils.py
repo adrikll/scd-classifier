@@ -7,8 +7,8 @@ import os
 import numpy as np
 from sklearn.metrics import f1_score
 
-# Classes para o problema de Chagas
-CLASSES = ['Não-Óbito', 'Óbito'] # Alterado para as classes binárias do problema
+
+CLASSES = ['Não-Óbito', 'Óbito'] 
 
 def evaluate_and_compare_models(results, X_test, y_test):
     """
@@ -25,7 +25,6 @@ def evaluate_and_compare_models(results, X_test, y_test):
         y_pred = best_model.predict(X_test)
         
         accuracy = accuracy_score(y_test, y_pred)
-        # report = classification_report(y_test, y_pred, target_names=CLASSES, output_dict=True) # removido para evitar erro se CLASSES for importado de outro lugar
         
         print(f"\n--- {model_name} ---")
         print(f"Acurácia no Teste: {accuracy:.4f}")
@@ -41,7 +40,6 @@ def evaluate_and_compare_models(results, X_test, y_test):
     print("\nResumo Comparativo dos Modelos ----------")
     print(summary_df.to_string())
     
-    # Certifique-se de que o diretório de saída existe
     if not os.path.exists(config.OUTPUT_DIR):
         os.makedirs(config.OUTPUT_DIR)
     summary_df.to_csv(f"{config.OUTPUT_DIR}resumo_comparativo.csv", index=False)
@@ -64,7 +62,7 @@ def plot_learning_curves(history, model_name, save_dir):
     plt.savefig(os.path.join(save_dir, 'learning_curve.png'))
     plt.close()
 
-def plot_confusion_matrix(y_true, y_pred, model_name, save_dir, CLASSES): # Adicionado CLASSES como parâmetro
+def plot_confusion_matrix(y_true, y_pred, model_name, save_dir, CLASSES):
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=CLASSES, yticklabels=CLASSES)
@@ -73,8 +71,7 @@ def plot_confusion_matrix(y_true, y_pred, model_name, save_dir, CLASSES): # Adic
     plt.savefig(os.path.join(save_dir, 'confusion_matrix.png'))
     plt.close()
 
-def plot_roc_curves(y_true, y_pred_probs, model_name, save_dir, CLASSES): # Simplificado para binário
-    # y_true deve ser 0s e 1s, y_pred_probs deve ser a probabilidade da classe positiva (1)
+def plot_roc_curves(y_true, y_pred_probs, model_name, save_dir, CLASSES):
     fpr, tpr, _ = roc_curve(y_true, y_pred_probs)
     roc_auc = auc(fpr, tpr)
     

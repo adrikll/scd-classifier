@@ -6,15 +6,17 @@ import numpy as np
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from sklearn.svm import SVC
 from scikeras.wrappers import KerasClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.utils import class_weight
+from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.utils import class_weight 
 
 import config
 from dataloader import load_and_prepare_data
-from models.neural_networks import create_cnn # Assumindo que essa função existe
-from utils import plot_confusion_matrix, plot_roc_curves # Removed CLASSES from import
-import utils # Importa o módulo utils para acessar CLASSES.
+from models.neural_networks import create_cnn, create_mlp
+from utils import plot_confusion_matrix, plot_roc_curves
+import utils
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -29,11 +31,10 @@ class NpEncoder(json.JSONEncoder):
 def train_ensemble():
     """
     Treina e avalia um modelo de Stacking, combinando
-    o Random Forest, XGBoost e CNN para classificação binária.
+    o Random Forest, XGBoost, LightGBM, SVM e CNN para classificação binária.
     """
-    MODEL_NAME = 'Stacking_Ensemble_RF_XGB_CNN_Chagas'
+    MODEL_NAME = 'Stacking_Ensemble_Diversificado_Chagas'
 
-    # carrega os dados e hiperparametros otimizados 
     print("\nCarregando dados e melhores hiperparâmetros...")
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_and_prepare_data()
 
@@ -47,91 +48,91 @@ def train_ensemble():
 
     print("\nConstruindo o modelo Stacking diverso...")
 
-    params_rf = best_params.get('RandomForest')
-    params_xgb = best_params.get('XGBoost')
-    params_cnn = best_params.get('CNN')
+    my_manual_class_weights = {
+        0: 1.0, 
+        1: 1.0  
+    }
+    class_weights_dict = my_manual_class_weights
+    print(f"Pesos de classe MANUAIS aplicados para MLP/CNN no Ensemble: {class_weights_dict}")
+    # --- FIM DA ATRIBUIÇÃO MANUAL ---
 
-    if not all([params_rf, params_xgb, params_cnn]):
-        print("ERRO: Hiperparâmetros para RandomForest, XGBoost ou CNN não encontrados no arquivo JSON.")
-        return
+    # Calcular scale_pos_weight para XGBoost e LightGBM
+    neg_count = np.sum(y_train == 0)
+    pos_count = np.sum(y_train == 1)
+    scale_pos_weight_value = neg_count / pos_count
+    print(f"scale_pos_weight para XGBoost/LightGBM: {scale_pos_weight_value:.2f}")
 
-    # balanceamento das classes para a CNN no ensemble (se aplicável)
-    # StackingClassifier lida com o class_weight para os modelos base se eles aceitarem
-    # Para KerasClassifier no ensemble, podemos passar None para class_weight e usar loss='binary_crossentropy'
-    # mas se o desbalanceamento for grande, calcular weights aqui para CNN pode ser útil.
-    weights = class_weight.compute_class_weight(
-        class_weight='balanced',
-        classes=np.unique(y_train),
-        y=y_train
-    )
-    class_weights_dict = dict(enumerate(weights)) # Para CNN, onde 0 e 1 são os índices de classe
-
-    # cria a lista de estimadores de base
     base_estimators = [
-        ('rf', RandomForestClassifier(random_state=config.RANDOM_STATE, class_weight='balanced', n_jobs=-1, **params_rf)),
-        ('xgb', XGBClassifier(random_state=config.RANDOM_STATE, eval_metric='logloss', n_jobs=-1, **params_xgb)),
-        ('cnn', KerasClassifier(
-            model=create_cnn,
-            optimizer=params_cnn.get('optimizer'),
-            loss="binary_crossentropy", # Alterado para binária
-            epochs=params_cnn.get('epochs'),
-            batch_size=params_cnn.get('batch_size'),
-            class_weight=class_weights_dict, # Usar os pesos balanceados
+        #('rf', RandomForestClassifier(random_state=config.RANDOM_STATE, class_weight='balanced', n_jobs=-1, **best_params.get('RandomForest', {}))),
+        #('xgb', XGBClassifier(random_state=config.RANDOM_STATE, eval_metric='logloss', n_jobs=-1, scale_pos_weight=scale_pos_weight_value, **best_params.get('XGBoost', {}))),
+        ('lgbm', LGBMClassifier(random_state=config.RANDOM_STATE, n_jobs=-1, class_weight='balanced', objective='binary', **best_params.get('LightGBM', {}))),
+        #('svm', SVC(random_state=config.RANDOM_STATE, probability=True, class_weight='balanced', **best_params.get('SVM', {}))),
+        ('mlp', KerasClassifier( 
+            model=create_mlp, 
+            optimizer=best_params.get('MLP', {}).get('optimizer'),
+            loss="binary_crossentropy",
+            epochs=best_params.get('MLP', {}).get('epochs'),
+            batch_size=best_params.get('MLP', {}).get('batch_size'),
+            class_weight=class_weights_dict, 
             verbose=0,
-            model__input_shape=config.NN_INPUT_SHAPE # Passa o input_shape
+            model__input_shape=config.NN_INPUT_SHAPE
+        )),
+        ('cnn', KerasClassifier( 
+            model=create_cnn,
+            optimizer=best_params.get('CNN', {}).get('optimizer'),
+            loss="binary_crossentropy",
+            epochs=best_params.get('CNN', {}).get('epochs'),
+            batch_size=best_params.get('CNN', {}).get('batch_size'),
+            class_weight=class_weights_dict, 
+            verbose=0,
+            model__input_shape=config.NN_INPUT_SHAPE
         ))
     ]
 
-    # meta-modelo
+    #meta-modelo
     meta_model = LogisticRegression(max_iter=1000, n_jobs=1)
 
-    # classificador Stacking final
+    # lassificador Stacking final
     stacking_model = StackingClassifier(
         estimators=base_estimators,
         final_estimator=meta_model,
-        cv=3, # cv para StackingClassifier
-        n_jobs=1, # n_jobs para o StackingClassifier em si
-        passthrough=True # Passa features originais para o meta-modelo
+        cv=3,
+        n_jobs=1,
+        passthrough=True
     )
     print("Modelo Stacking construído.")
 
-    # treinamento
     print("\nTreinando o modelo Stacking... ")
     start_time = time.time()
     stacking_model.fit(X_train, y_train)
     end_time = time.time()
     print(f"Treinamento concluído em {(end_time - start_time):.2f} segundos.")
 
-    # avaliação
     print("\nAvaliando o modelo...")
     
     model_output_dir = os.path.join(config.OUTPUT_DIR, MODEL_NAME)
     if not os.path.exists(model_output_dir):
         os.makedirs(model_output_dir)
 
-    # predições
-    # Para classificadores Scikit-learn, predict_proba retorna probabilidades para cada classe
-    # Para binário, geralmente a segunda coluna é a probabilidade da classe positiva (1)
     y_val_pred_probs_ensemble = stacking_model.predict_proba(X_val)[:, 1]
     best_threshold_ensemble = utils.find_best_threshold(y_val, y_val_pred_probs_ensemble)
+    print(f"Melhor limiar para Ensemble encontrado: {best_threshold_ensemble:.2f} (F1-Score no Val: {f1_score(y_val, (y_val_pred_probs_ensemble >= best_threshold_ensemble).astype(int)):.4f})") # Adicionado F1-score no print
     
     y_pred_probs = stacking_model.predict_proba(X_test)[:, 1]
     y_pred = (y_pred_probs >= best_threshold_ensemble).astype(int) 
 
-    # plots
-    plot_confusion_matrix(y_test, y_pred, MODEL_NAME, model_output_dir, CLASSES=utils.CLASSES) # Usa CLASSES do utils
-    # y_test_one_hot não é necessário para binário, basta y_test para ROC
-    plot_roc_curves(y_test, y_pred_probs, MODEL_NAME, model_output_dir, CLASSES=utils.CLASSES) # Usa CLASSES do utils
+    plot_confusion_matrix(y_test, y_pred, MODEL_NAME, model_output_dir, CLASSES=utils.CLASSES)
+    plot_roc_curves(y_test, y_pred_probs, MODEL_NAME, model_output_dir, CLASSES=utils.CLASSES)
     print(f"Gráficos de análise salvos em: {model_output_dir}")
 
     accuracy = accuracy_score(y_test, y_pred)
-    report_str = classification_report(y_test, y_pred, target_names=utils.CLASSES) # Usa CLASSES do utils
+    report_str = classification_report(y_test, y_pred, target_names=utils.CLASSES)
     
     print(f"\nRelatório Final para {MODEL_NAME}----------------------------")
     print(f"Acurácia no Teste: {accuracy:.4f}")
     print(report_str)
     
-    report_dict = classification_report(y_test, y_pred, target_names=utils.CLASSES, output_dict=True) # Usa CLASSES do utils
+    report_dict = classification_report(y_test, y_pred, target_names=utils.CLASSES, output_dict=True)
     report_json_path = os.path.join(model_output_dir, 'classification_report.json')
     report_txt_path = os.path.join(model_output_dir, 'classification_report.txt')
     

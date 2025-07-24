@@ -2,18 +2,18 @@ import os
 import json
 import numpy as np
 import pandas as pd
-# from tensorflow.keras.utils import to_categorical # Não necessário para classificação binária se o alvo for 0 ou 1
-from sklearn.utils import class_weight
-from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, f1_score
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from sklearn.svm import SVC
 from tensorflow.keras.callbacks import EarlyStopping
 
 import config
 from dataloader import load_and_prepare_data
-from models.neural_networks import create_mlp, create_cnn # Assumindo que essas funções existem
-from utils import plot_learning_curves, plot_confusion_matrix, plot_roc_curves # Removed CLASSES from import
-import utils # Importa o módulo utils para acessar CLASSES.
+from models.neural_networks import create_mlp, create_cnn
+from utils import plot_learning_curves, plot_confusion_matrix, plot_roc_curves
+import utils
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -31,7 +31,6 @@ def train_and_evaluate():
 
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_and_prepare_data()
 
-    # melhores hiperparâmetros
     try:
         with open(config.BEST_PARAMS_FILE, 'r') as f:
             best_params = json.load(f)
@@ -39,10 +38,18 @@ def train_and_evaluate():
         print(f"Erro: Arquivo de melhores parâmetros '{config.BEST_PARAMS_FILE}' não encontrado. Execute 'optimize.py' primeiro.")
         return
 
-    # balanceamento das classes usando class_weights
-    weights = class_weight.compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-    class_weights_dict = dict(enumerate(weights))
-    
+    my_manual_class_weights = {
+        0: 1.0,  
+        1: 3.0 
+    }
+    class_weights_dict = my_manual_class_weights
+    print(f"Pesos de classe MANUAIS aplicados para MLP/CNN: {class_weights_dict}")
+
+    neg_count = np.sum(y_train == 0)
+    pos_count = np.sum(y_train == 1)
+    scale_pos_weight_value = neg_count / pos_count
+    print(f"scale_pos_weight para XGBoost/LightGBM: {scale_pos_weight_value:.2f}")
+
     final_results = []
 
     for model_name, params in best_params.items():
@@ -52,21 +59,22 @@ def train_and_evaluate():
         if not os.path.exists(model_output_dir):
             os.makedirs(model_output_dir)
 
+        model = None
         if model_name == 'RandomForest':
             model = RandomForestClassifier(random_state=config.RANDOM_STATE, class_weight='balanced', n_jobs=-1, **params)
             model.fit(X_train, y_train)
-            
-            # Predições para otimização de limiar no conjunto de validação
-            y_val_pred_probs = model.predict_proba(X_val)[:, 1]
-            best_threshold = utils.find_best_threshold(y_val, y_val_pred_probs) # Encontra limiar no val
         
         elif model_name == 'XGBoost':
-            model = XGBClassifier(random_state=config.RANDOM_STATE, eval_metric='logloss', n_jobs=-1, **params)
+            model = XGBClassifier(random_state=config.RANDOM_STATE, eval_metric='logloss', n_jobs=-1, scale_pos_weight=scale_pos_weight_value, **params)
             model.fit(X_train, y_train)
-            
-            # Predições para otimização de limiar no conjunto de validação
-            y_val_pred_probs = model.predict_proba(X_val)[:, 1]
-            best_threshold = utils.find_best_threshold(y_val, y_val_pred_probs) # Encontra limiar no val
+
+        elif model_name == 'LightGBM':
+            model = LGBMClassifier(random_state=config.RANDOM_STATE, n_jobs=-1, class_weight='balanced', objective='binary', **params)
+            model.fit(X_train, y_train)
+
+        elif model_name == 'SVM':
+            model = SVC(random_state=config.RANDOM_STATE, probability=True, class_weight='balanced', **params)
+            model.fit(X_train, y_train)
             
         elif model_name in ['MLP', 'CNN']:
             if model_name == 'MLP':
@@ -92,7 +100,7 @@ def train_and_evaluate():
                 epochs=params.get('epochs', config.NN_EPOCHS),
                 batch_size=params.get('batch_size', config.NN_BATCH_SIZE),
                 validation_data=(X_val, y_val),
-                class_weight=class_weights_dict,
+                class_weight=class_weights_dict, # Usa os pesos MANUAIS aqui
                 verbose=1,
                 callbacks=[early_stopping]
             )
@@ -103,22 +111,26 @@ def train_and_evaluate():
                 json.dump(history.history, f, cls=NpEncoder, indent=4)
             print(f"Histórico de treinamento salvo em: {history_path}")
 
-            # Predições para otimização de limiar no conjunto de validação
+        if model is None:
+            print(f"Erro: Modelo {model_name} não foi instanciado corretamente.")
+            continue
+
+        if model_name in ['MLP', 'CNN']:
             y_val_pred_probs = model.predict(X_val).flatten()
-            best_threshold = utils.find_best_threshold(y_val, y_val_pred_probs) # Encontra limiar no val
-        
-        # avaliação no conjunto de teste
+        else:
+            y_val_pred_probs = model.predict_proba(X_val)[:, 1]
+            
+        best_threshold = utils.find_best_threshold(y_val, y_val_pred_probs)
+        print(f"Melhor limiar encontrado: {best_threshold:.2f} (F1-Score no Val: {f1_score(y_val, (y_val_pred_probs >= best_threshold).astype(int)):.4f})")
+
         print("Realizando predições no conjunto de teste...")
         if model_name in ['MLP', 'CNN']:
             y_pred_probs = model.predict(X_test).flatten()
         else:
             y_pred_probs = model.predict_proba(X_test)[:, 1]
 
-        # APLICA O MELHOR LIMIAR ENCONTRADO NO CONJUNTO DE VALIDAÇÃO PARA O CONJUNTO DE TESTE
         y_pred = (y_pred_probs >= best_threshold).astype(int) 
         
-        # ... (Restante do código de avaliação e salvamento de relatórios permanece igual) ...
-
         plot_confusion_matrix(y_test, y_pred, model_name, model_output_dir, CLASSES=utils.CLASSES)
         plot_roc_curves(y_test, y_pred_probs, model_name, model_output_dir, CLASSES=utils.CLASSES)
 

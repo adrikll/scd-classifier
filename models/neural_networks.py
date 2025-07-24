@@ -4,10 +4,10 @@ from tensorflow.keras import layers
 def create_mlp(optimizer_name='adam', learning_rate=0.001, input_shape=(175,)):
     model = keras.Sequential([
         keras.Input(shape=input_shape),
-        layers.Dense(64, activation='relu'), # Reduzido de 128
-        layers.Dropout(0.2), # Reduzido de 0.3
-        layers.Dense(32, activation='relu'), # Reduzido de 64
-        layers.Dropout(0.2), # Reduzido de 0.3
+        layers.Dense(64, activation='relu'), 
+        layers.Dropout(0.3), 
+        layers.Dense(32, activation='relu'), 
+        layers.Dropout(0.3), 
         layers.Dense(1, activation='sigmoid')
     ])
     optimizer = keras.optimizers.get({
@@ -26,8 +26,8 @@ def create_cnn(optimizer_name='adam', learning_rate=0.001, input_shape=(175,)):
         layers.Conv1D(filters=32, kernel_size=3, activation='relu', padding='same'), # Reduzido de 64
         layers.MaxPooling1D(pool_size=2),
         layers.Flatten(),
-        layers.Dense(32, activation='relu'), # Reduzido de 64
-        layers.Dropout(0.2), # Reduzido de 0.3
+        layers.Dense(32, activation='relu'), 
+        layers.Dropout(0.2), 
         layers.Dense(1, activation='sigmoid')
     ])
     optimizer = keras.optimizers.get({
