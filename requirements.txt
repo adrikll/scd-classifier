@@ -1,0 +1,8 @@
+scikit-learn==1.4.2
+scikeras==0.13.0
+tensorflow==2.16.1
+pandas
+matplotlib
+seaborn
+imbalanced-learn
+xgboost
