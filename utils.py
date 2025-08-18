@@ -1,109 +1,158 @@
-import pandas as pd
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
-import matplotlib.pyplot as plt
-import seaborn as sns
-import config
-import os
 import numpy as np
-from sklearn.metrics import f1_score
+import seaborn as sns
+from matplotlib import pyplot as plt
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.discriminant_analysis import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.metrics import confusion_matrix, recall_score, make_scorer
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, RandomizedSearchCV
 
+# --- Funções de Métricas e Scoring ---
 
-CLASSES = ['Não-Óbito', 'Óbito'] 
+def specificity_score(y_true, y_pred):
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    return tn / (tn + fp + 1e-8)
 
-def evaluate_and_compare_models(results, X_test, y_test):
-    """
-    Avalia os melhores modelos encontrados e gera um relatório comparativo.
-    Esta função não está sendo usada na pipeline atual, mas é mantida por completude.
-    """
-    print("\nAvaliação Final no Conjunto de Teste -----------")
+def geometric_mean_score(y_true, y_pred):
+    if -1 in np.unique(y_pred):
+        y_pred = (y_pred == -1).astype(int)
     
-    summary = []
+    recall = recall_score(y_true, y_pred)
+    specificity = specificity_score(y_true, y_pred)
+    return np.sqrt(recall * specificity)
+
+gmean_scorer = make_scorer(geometric_mean_score)
+
+def calculate_metrics(y_true, y_pred, display=True):
+    if -1 in np.unique(y_pred):
+        y_pred = (y_pred == -1).astype(int)
     
-    for model_name, result in results.items():
-        best_model = result['best_estimator']
-        
-        y_pred = best_model.predict(X_test)
-        
-        accuracy = accuracy_score(y_test, y_pred)
-        
-        print(f"\n--- {model_name} ---")
-        print(f"Acurácia no Teste: {accuracy:.4f}")
-        print(classification_report(y_test, y_pred, target_names=CLASSES))
-        
-        summary.append({
-            'Modelo': model_name,
-            'Acurácia Teste': accuracy,
-            'Melhores Parâmetros': result['best_params']
-        })
-        
-    summary_df = pd.DataFrame(summary)
-    print("\nResumo Comparativo dos Modelos ----------")
-    print(summary_df.to_string())
+    try:
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    except ValueError: # Acontece se o classificador prever apenas uma classe
+        tn, fp, fn, tp = 0, 0, 0, 0
+        if len(np.unique(y_pred)) == 1:
+            if np.unique(y_pred)[0] == 1:
+                tp = np.sum(y_true == 1)
+                fp = np.sum(y_true == 0)
+            else:
+                tn = np.sum(y_true == 0)
+                fn = np.sum(y_true == 1)
+
+    epsilon = 1e-8
+    accuracy = (tp + tn) / (tp + tn + fp + fn + epsilon)
+    precision = tp / (tp + fp + epsilon)
+    recall = tp / (tp + fn + epsilon)
+    specificity = tn / (tn + fp + epsilon)
+    f1_score = 2 * (precision * recall) / (precision + recall + epsilon)
+    gmean = np.sqrt(specificity * recall)
+
+    metrics = {
+        "Accuracy": accuracy, "Precision": precision, "Recall": recall,
+        "Specificity": specificity, "F1 Score": f1_score, "Geometric Mean": gmean
+    }
     
-    if not os.path.exists(config.OUTPUT_DIR):
-        os.makedirs(config.OUTPUT_DIR)
-    summary_df.to_csv(f"{config.OUTPUT_DIR}resumo_comparativo.csv", index=False)
-    print(f"\nRelatório comparativo salvo em: {config.OUTPUT_DIR}resumo_comparativo.csv")
+    if display:
+        print("\n--- Métricas de Avaliação ---")
+        for name, value in metrics.items():
+            print(f"{name}: {value*100:.2f}%")
 
+    return metrics
 
-def plot_learning_curves(history, model_name, save_dir):
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Acurácia de Treino')
-    plt.plot(history.history['val_accuracy'], label='Acurácia de Validação')
-    plt.title(f'Curva de Acurácia - {model_name}')
-    plt.xlabel('Época'); plt.ylabel('Acurácia'); plt.legend()
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Perda de Treino')
-    plt.plot(history.history['val_loss'], label='Perda de Validação')
-    plt.title(f'Curva de Perda - {model_name}')
-    plt.xlabel('Época'); plt.ylabel('Perda'); plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_dir, 'learning_curve.png'))
-    plt.close()
+# --- Funções de Plotagem e Display ---
 
-def plot_confusion_matrix(y_true, y_pred, model_name, save_dir, CLASSES):
+def plot_confusion_matrix(y_true, y_pred, title="Confusion Matrix", save_path=None):
     cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=CLASSES, yticklabels=CLASSES)
-    plt.title(f'Matriz de Confusão - {model_name}')
-    plt.xlabel('Classe Prevista'); plt.ylabel('Classe Verdadeira')
-    plt.savefig(os.path.join(save_dir, 'confusion_matrix.png'))
-    plt.close()
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False)
+    plt.title(title)
+    plt.xlabel("Previsto")
+    plt.ylabel("Verdadeiro")
+    if save_path:
+        plt.savefig(save_path)
+        print(f"\nMatriz de confusão salva em: {save_path}")
+    plt.show()
 
-def plot_roc_curves(y_true, y_pred_probs, model_name, save_dir, CLASSES):
-    fpr, tpr, _ = roc_curve(y_true, y_pred_probs)
-    roc_auc = auc(fpr, tpr)
+def display_kfold_scores(metrics_list):
+    mean_metrics = {key: np.mean([m[key] for m in metrics_list]) for key in metrics_list[0]}
+    std_metrics = {key: np.std([m[key] for m in metrics_list]) for key in metrics_list[0]}
     
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'Curva ROC (AUC = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlabel('Taxa de Falsos Positivos'); plt.ylabel('Taxa de Verdadeiros Positivos')
-    plt.title(f'Curva ROC - {model_name}'); plt.legend(loc="lower right")
-    plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
-    plt.close()
+    print("\n--- Resultados da Validação Cruzada (K-Fold) ---")
+    for key in mean_metrics:
+        mean_val = mean_metrics[key]
+        std_val = std_metrics[key]
+        print(f"{key}: {mean_val*100:.2f}% ± {std_val*100:.2f}%")
+
+# --- Funções de Pipeline e Otimização ---
+
+def apply_grid_search(X, y, estimator, param_grid, scoring, cv, fit_params={}):
+    grid_search = GridSearchCV(
+        estimator=estimator,
+        param_grid=param_grid,
+        scoring=scoring,
+        cv=cv,
+        n_jobs=-1,
+        verbose=1,
+    )
+    grid_search.fit(X, y, **fit_params)
+    print(f"\nMelhor pontuação (G-Mean) no Grid Search: {grid_search.best_score_:.4f}")
+    return grid_search.best_params_
+
+def apply_random_search(X, y, estimator, param_distributions, scoring, cv, n_iter, fit_params={}):
+    """Aplica o RandomizedSearchCV para encontrar os melhores hiperparâmetros."""
+    random_search = RandomizedSearchCV(
+        estimator=estimator,
+        param_distributions=param_distributions, # Nome do parâmetro oficial
+        n_iter=n_iter,                           # Número de iterações a testar
+        scoring=scoring,
+        cv=cv,
+        n_jobs=-1,
+        verbose=1,
+        random_state=42                          # Garante que a busca aleatória seja reprodutível
+    )
     
-def find_best_threshold(y_true, y_pred_probs, classes_to_consider=None):
-    """
-    Encontra o limiar de classificação que maximiza o F1-Score.
-    y_true: Rótulos verdadeiros.
-    y_pred_probs: Probabilidades preditas para a classe positiva.
-    classes_to_consider: Não usado para classificação binária.
-    Retorna: O melhor limiar.
-    """
-    thresholds = np.linspace(0, 1, 100) 
-    best_f1 = -1
-    best_threshold = 0.5 
+    random_search.fit(X, y, **fit_params)
+    print(f"\nMelhor pontuação (G-Mean) no Random Search: {random_search.best_score_:.4f}")
+    return random_search.best_params_
+
+def extract_params_and_k(params, model_prefix, k_key):
+    best_params = {
+        k.split("__")[-1]: v for k, v in params.items() if k.startswith(model_prefix)
+    }
+    best_k = params.get(k_key, None)
+    return best_params, best_k
+
+# --- Classes e Funções de Pré-processamento ---
+
+def preprocess(X_train, X_test, y_train, k, selector):
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    selector.set_params(k=k)
+    X_train_selected = selector.fit_transform(X_train_scaled, y_train)
+    X_test_selected = selector.transform(X_test_scaled)
     
-    for th in thresholds:
-        y_pred = (y_pred_probs >= th).astype(int)
-        # Calcula F1-score para a classe positiva (Óbito)
-        # zero_division=0 evita warnings e trata casos onde não há predições para uma classe
-        current_f1 = f1_score(y_true, y_pred, pos_label=1, zero_division=0) 
+    return X_train_selected, X_test_selected
+
+
+class CorrelationFeatureReducer(BaseEstimator, TransformerMixin):
+    def __init__(self, threshold=0.9):
+        self.threshold = threshold
+        self.cols_to_keep_ = None
+
+    def fit(self, X, y=None):
+        corr_matrix = np.abs(np.corrcoef(X, rowvar=False))
+        upper = np.triu(corr_matrix, k=1)
         
-        if current_f1 > best_f1:
-            best_f1 = current_f1
-            best_threshold = th
-            
-    print(f"Melhor limiar encontrado: {best_threshold:.2f} com F1-Score: {best_f1:.4f}")
-    return best_threshold
+        to_drop = {column for column in range(upper.shape[1]) if any(upper[:, column] > self.threshold)}
+        
+        self.cols_to_keep_ = [i for i in range(X.shape[1]) if i not in to_drop]
+        return self
+
+    def transform(self, X):
+        return X[:, self.cols_to_keep_]
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
