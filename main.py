@@ -1,6 +1,9 @@
 import warnings
-from src import dataloader, optimization, train, evaluation
-import src.config as config
+from src import dataloader, optimization, train, evaluation, config
+import utils 
+import matplotlib
+matplotlib.use('Agg')
+import os
 
 warnings.filterwarnings('ignore')
 
@@ -24,10 +27,13 @@ def main():
     for model_config in config.MODELS_CONFIG:
         model_name = model_config['name']
         print(f"\n{'='*20} Processando Modelo: {model_name} {'='*20}")
+        
+        model_results_path = os.path.join(config.RESULTS_PATH, model_name)
+        os.makedirs(model_results_path, exist_ok=True)
 
         # Definir parâmetros de fit específicos para cada modelo, se necessário
         fit_params = {}
-        if model_name in ['GradientBoosting', 'XGBoost', 'LightGBM']:
+        if model_name in ['GradientBoosting', 'XGBoost', 'LightGBM', 'SVM']:
              fit_params = {'clf__sample_weight': sample_weights_train}
         
         # 3.1. Otimização de Hiperparâmetros
@@ -47,16 +53,34 @@ def main():
             best_k=best_k,
             fit_params=fit_params
         )
-
-        # 3.3. Avaliação no Conjunto de Teste
-        evaluation.evaluate_on_test_set(
+        # 3.3. Encontrar o Threshold Ótimo
+        optimal_threshold = evaluation.find_threshold_with_cv(
+            pipeline=final_pipeline,
+            X_train=X_train,
+            y_train=y_train,
+            fit_params=fit_params
+        )
+        class_report_dict, class_report_str = evaluation.evaluate_on_test_set(
             pipeline=final_pipeline,
             X_test=X_test,
             y_test=y_test,
-            model_name=model_name
+            model_name=model_name,
+            optimal_threshold=optimal_threshold,
+            model_results_path=model_results_path # Passa o novo caminho
         )
-        
-        # 3.4. Validação Cruzada para robustez
+        utils.save_model_summary(
+            model_name=model_name,
+            best_params=best_params,
+            best_k=best_k,
+            optimal_threshold=optimal_threshold,
+            class_report_dict=class_report_dict,
+            model_results_path=model_results_path
+        )
+        utils.save_classification_report(
+            class_report_str=class_report_str,
+            model_results_path=model_results_path
+        )
+        # 3.5. Validação Cruzada para robustez
         evaluation.perform_cross_validation(
             pipeline=final_pipeline,
             X_train=X_train,

@@ -6,6 +6,7 @@ from sklearn.ensemble import (
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
+from sklearn.svm import SVC
 from sklearn.feature_selection import SelectKBest, f_classif
 from scipy.stats import randint, uniform
 
@@ -32,17 +33,6 @@ DROP_COLUMNS = [
 # --- Configuração dos Modelos e Hiperparâmetros para Otimização ---
 # Esta estrutura permite adicionar ou remover modelos facilmente.
 MODELS_CONFIG = [
-    {
-        'name': 'IsolationForest',
-        'estimator': IsolationForest(random_state=RANDOM_STATE, n_jobs=-1),
-        'param_grid': {
-            'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239], 
-            'clf__n_estimators': [100, 200, 300],
-            'clf__max_samples': [93, 64, 32],
-            'clf__contamination': [0.05, 0.1, 0.2, 0.3],
-            'clf__max_features': [0.6, 0.8, 1.0]
-        }
-    },
     {
         'name': 'RandomForest',
         'estimator': RandomForestClassifier(random_state=RANDOM_STATE),
@@ -89,6 +79,16 @@ MODELS_CONFIG = [
             'clf__max_depth': [-1, 10, 20], 
             'clf__subsample': [0.8, 0.9, 1.0],
             'clf__colsample_bytree': [0.8, 0.9, 1.0],
+        }
+    },
+    {
+        'name': 'SVM',
+        'estimator': SVC(random_state=RANDOM_STATE, probability=True),
+        'param_grid': {
+            'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
+            'clf__C': [0.1, 1, 10, 100],
+            'clf__kernel': ['rbf', 'linear'],
+            'clf__gamma': ['scale', 'auto', 0.1, 0.01],
         }
     },
     {

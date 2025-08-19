@@ -6,6 +6,8 @@ from sklearn.discriminant_analysis import StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.metrics import confusion_matrix, recall_score, make_scorer
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, RandomizedSearchCV
+import json
+import os 
 
 # --- Funções de Métricas e Scoring ---
 
@@ -58,6 +60,34 @@ def calculate_metrics(y_true, y_pred, display=True):
             print(f"{name}: {value*100:.2f}%")
 
     return metrics
+
+def find_optimal_threshold(y_true, y_pred_proba, metric_func):
+    """
+    Encontra o threshold ótimo que maximiza uma métrica específica.
+    
+    Args:
+        y_true: Rótulos verdadeiros.
+        y_pred_proba: Probabilidades previstas para a classe positiva.
+        metric_func: A função da métrica a ser maximizada (ex: geometric_mean_score).
+        
+    Returns:
+        O melhor threshold encontrado.
+    """
+    thresholds = np.arange(0.01, 1.0, 0.01) # Testa thresholds de 0.01 a 0.99
+    best_score = 0
+    best_threshold = 0.5 # Começa com o padrão
+
+    for threshold in thresholds:
+        # Converte probabilidades em classes com base no threshold atual
+        y_pred_class = (y_pred_proba >= threshold).astype(int)
+        score = metric_func(y_true, y_pred_class)
+        
+        if score > best_score:
+            best_score = score
+            best_threshold = threshold
+            
+    print(f"\nMelhor threshold encontrado: {best_threshold:.2f} (com score de {best_score:.4f})")
+    return best_threshold
 
 # --- Funções de Plotagem e Display ---
 
@@ -121,6 +151,35 @@ def extract_params_and_k(params, model_prefix, k_key):
     }
     best_k = params.get(k_key, None)
     return best_params, best_k
+
+def save_model_summary(model_name, best_params, best_k, optimal_threshold, class_report_dict, model_results_path):
+    """Salva o resumo dos resultados (parâmetros, threshold) em um arquivo JSON."""
+    
+    summary = {
+        "model_name": model_name,
+        "best_k_features": best_k,
+        "optimal_threshold": f"{optimal_threshold:.4f}",
+        "best_hyperparameters": best_params,
+        "classification_report_dict": class_report_dict
+    }
+        
+    file_path = os.path.join(model_results_path, 'summary.json')
+    
+    with open(file_path, 'w') as f:
+        json.dump(summary, f, indent=4)
+        
+    print(f"Resumo do modelo salvo em: {file_path}")
+
+def save_classification_report(class_report_str, model_results_path):
+    """Salva o relatório de classificação formatado em um arquivo de texto."""
+    
+    file_path = os.path.join(model_results_path, 'classification_report.txt')
+    
+    with open(file_path, 'w') as f:
+        f.write("--- Relatório de Classificação ---\n\n")
+        f.write(class_report_str)
+        
+    print(f"Relatório de classificação salvo em: {file_path}")
 
 # --- Classes e Funções de Pré-processamento ---
 
