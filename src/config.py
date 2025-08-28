@@ -82,16 +82,6 @@ MODELS_CONFIG = [
         }
     },
     {
-        'name': 'SVM',
-        'estimator': SVC(random_state=RANDOM_STATE, probability=True),
-        'param_grid': {
-            'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
-            'clf__C': [0.1, 1, 10, 100],
-            'clf__kernel': ['rbf', 'linear'],
-            'clf__gamma': ['scale', 'auto', 0.1, 0.01],
-        }
-    },
-    {
         'name': 'MLPClassifier',
         'estimator': MLPClassifier(random_state=RANDOM_STATE, max_iter=2000),
         'param_grid': {

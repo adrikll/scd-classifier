@@ -33,7 +33,7 @@ def main():
 
         # Definir parâmetros de fit específicos para cada modelo, se necessário
         fit_params = {}
-        if model_name in ['GradientBoosting', 'XGBoost', 'LightGBM', 'SVM']:
+        if model_name in ['XGBoost', 'LightGBM']:
              fit_params = {'clf__sample_weight': sample_weights_train}
         
         # 3.1. Otimização de Hiperparâmetros
