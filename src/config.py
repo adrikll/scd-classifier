@@ -10,7 +10,10 @@ from sklearn.svm import SVC
 from sklearn.feature_selection import SelectKBest, f_classif
 from scipy.stats import randint, uniform
 
-# --- Configurações Gerais ---
+import warnings
+warnings.filterwarnings('ignore')
+
+#General Settings
 RANDOM_STATE = 42
 CV_SPLITS = 5
 TEST_SIZE = 0.2
@@ -18,11 +21,11 @@ N_ITER_RANDOM_SEARCH = 200
 MODEL_PREFIX = "clf"
 K_KEY = "select__k"
 
-# --- Configurações de Paths ---
+#Path Settings
 DATA_PATH = 'dados/chagas_all_features.xlsx'
 RESULTS_PATH = 'results'
 
-# --- Configurações do Dataset ---
+#Model Config
 TARGET_COLUMN = 'Obito_MS_FU-5 years'
 DROP_COLUMNS = [
     'ID', 'Name', 'FE', 'Filename', 'Age', 'Obito_MS', 'Time', 
@@ -30,8 +33,6 @@ DROP_COLUMNS = [
     'Rassi Points', 'Classe_FE', 'Obito_MS_FU-5 years'
 ]
 
-# --- Configuração dos Modelos e Hiperparâmetros para Otimização ---
-# Esta estrutura permite adicionar ou remover modelos facilmente.
 MODELS_CONFIG = [
     {
         'name': 'RandomForest',
@@ -70,7 +71,7 @@ MODELS_CONFIG = [
     },
     {
         'name': 'LightGBM',
-        'estimator': LGBMClassifier(random_state=RANDOM_STATE),
+        'estimator': LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
         'param_grid': {
             'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
             'clf__n_estimators': [100, 200, 300],

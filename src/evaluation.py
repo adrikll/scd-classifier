@@ -3,7 +3,7 @@ from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from sklearn.base import clone 
 from sklearn.metrics import classification_report
 from sklearn.model_selection import cross_val_predict
-from utils import (
+from .utils import (
     calculate_metrics, 
     plot_confusion_matrix, 
     display_kfold_scores,
@@ -15,14 +15,14 @@ from . import config
 
 def find_threshold_with_cv(pipeline, X_train, y_train, fit_params={}):
     """
-    Usa validação cruzada MANUAL para obter previsões e encontrar o threshold ótimo,
-    permitindo o uso de fit_params.
+    Uses manual cross-validation to get out-of-fold predictions and find the optimal decision threshold,
+    allowing the use of `fit_params` like `sample_weight`.
     """
     print("\nBuscando threshold ótimo com validação cruzada...")
     
     cv = StratifiedKFold(n_splits=config.CV_SPLITS, shuffle=True, random_state=config.RANDOM_STATE)
     
-    # Array para armazenar as probabilidades de validação de cada fold
+    #armazena as probabilidades de validação de cada fold
     y_pred_proba_cv = np.zeros(len(y_train))
 
     for train_idx, val_idx in cv.split(X_train, y_train):
@@ -54,34 +54,29 @@ def find_threshold_with_cv(pipeline, X_train, y_train, fit_params={}):
 
 def evaluate_on_test_set(pipeline, X_test, y_test, model_name, optimal_threshold, model_results_path):
     """
-    Avalia o pipeline e retorna os relatórios de classificação (dict e string).
-    Salva a matriz de confusão no diretório específico do modelo.
+    Evaluates the pipeline and returns classification reports (dict and string).
+    Saves the confusion matrix to the model-specific directory.
     """
     print(f"\n--- Avaliação no Conjunto de Teste ({model_name} com Threshold={optimal_threshold:.2f}) ---")
     
     y_pred_proba = pipeline.predict_proba(X_test)[:, 1]
     y_pred = (y_pred_proba >= optimal_threshold).astype(int)
     
-    # Exibe as métricas no console
     calculate_metrics(y_test, y_pred, display=True)
     
-    # --- Usa o novo caminho para salvar a matriz de confusão ---
     plot_path = os.path.join(model_results_path, 'confusion_matrix.png')
     plot_confusion_matrix(y_test, y_pred, title=f'Matriz de Confusão - {model_name}', save_path=plot_path)
 
     print("\n--- Relatório de Classificação ---")
-    # Gera o relatório como dicionário (para o JSON)
     class_report_dict = classification_report(y_test, y_pred, output_dict=True)
     
-    # Gera o relatório como string (para o TXT e para imprimir)
     class_report_str = classification_report(y_test, y_pred)
     print(class_report_str)
 
-    # Retorna ambos os formatos
     return class_report_dict, class_report_str
 
 def perform_cross_validation(pipeline, X_train, y_train, fit_params={}):
-    """Realiza a validação cruzada para uma estimativa robusta do desempenho."""
+    """Performs cross-validation to get a robust estimate of the model's performance."""
     cv = StratifiedKFold(n_splits=config.CV_SPLITS, shuffle=True, random_state=config.RANDOM_STATE)
     
     metrics_list = []

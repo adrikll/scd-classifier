@@ -8,7 +8,9 @@ from torch.utils.data import Dataset
 import json
 
 class ChagasDataset(Dataset):
+    """A PyTorch Dataset to load, process, and extract features from ECG signals."""
     def __init__(self, data_dir, patients_df, weights=None, return_ids=True, max_minutes=27):
+        """Initializes the dataset by setting paths, loading patient metadata, and finding signal files."""
         self.data_dir       = data_dir
         self.patients_df    = self._filter_patients(patients_df)
         self.return_ids     = return_ids
@@ -31,21 +33,20 @@ class ChagasDataset(Dataset):
 
     def _extract_ecg_features(self, signal: np.ndarray) -> pd.Series:
         """
-        Extrai features de variabilidade da frequência cardíaca (HRV) a partir de um sinal de ECG,
-        segmentando o sinal em janelas consecutivas de 9 minutos. Para cada janela completa, são
-        extraídas as features de HRV no domínio do tempo, da frequência e não linear. Após o processamento
-        de todas as janelas, a função retorna a média e o desvio padrão das features extraídas para o paciente.
-
-        Parâmetros: 
+        Extracts Heart Rate Variability (HRV) features from an ECG signal.
         
-        signal : np.ndarray
-            Sinal de ECG em formato unidimensional (1D) e com frequência de amostragem definida
-            por `self.sampling_rate`.
-
-        Return:
+        The method segments the signal into consecutive 9-minute windows. For each
+        complete window, it extracts time-domain, frequency-domain, and non-linear
+        HRV features. After processing all windows, it returns the mean and
+        standard deviation of these features for the patient.
         
-        - pd.Series
-            A média e o desvio padrão das features extraídas de todas as janelas de 9 minutos.
+        Args:
+            signal (np.ndarray): A 1D ECG signal with the sampling rate
+                defined by `self.sampling_rate`.
+                
+        Returns:
+            pd.Series: The mean and standard deviation of features extracted
+                from all 9-minute windows.
         """
         
         window_duration = 9 * 60 
@@ -121,6 +122,7 @@ class ChagasDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
+        """Retrieves the features, label, and ID for a single patient at the given index."""
         path = self.files[idx]
         basename = os.path.basename(path)
         m = re.match(r'sinal(\d+)\.txt', basename)
@@ -148,11 +150,9 @@ class ChagasDataset(Dataset):
 
 def save_features(dataset, output_file):
     """
-    Salva as features extraídas do dataset em um arquivo CSV. Cada linha corresponde a um paciente,
-    com as médias e o desvio padrão das features extraídas de todas as janelas de 9 minutos do sinal de ECG.
-
-    Percorre o dataset, processa o sinal de ECG de cada paciente e salva as médias e o desvio padrão das
-    features extraídas em um arquivo CSV, juntamente com informações do paciente e o rótulo do evento.
+    Saves the extracted features from the dataset to a CSV file. Each row
+    corresponds to one patient, containing the mean and standard deviation
+    of features extracted from all 9-minute windows of their ECG signal.
     """
     header_written = os.path.exists(output_file)
 
