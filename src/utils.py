@@ -75,7 +75,8 @@ def find_optimal_threshold(y_true, y_pred_proba, metric_func):
         The best threshold found.
     """
     thresholds = np.arange(0.01, 1.0, 0.01) 
-    best_threshold = 0.5 # Começa com o padrão
+    best_threshold = 0.5 
+    best_score = 0.0
 
     for threshold in thresholds:
         # Converte probabilidades em classes com base no threshold atual

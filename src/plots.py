@@ -9,8 +9,8 @@ import joblib
 import json
 from upsetplot import from_contents, plot
 
-from utils import gmean_scorer
-import config
+from .utils import gmean_scorer
+from . import config
 
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 PALETTE = "BuPu"
@@ -41,6 +41,28 @@ def plot_feature_selection_scores(feature_names, selector, top_n=20, save_path=N
         print(f"Gráfico de seleção de features salvo em: {save_path}")
     plt.show()
 
+def plot_learning_curve(train_loss, val_loss, save_path=None):
+    """
+    Plots the learning curve (training loss vs. validation loss).
+    """
+    plt.figure(figsize=(10, 6))
+    
+    epochs = range(1, len(train_loss) + 1)
+    
+    plt.plot(epochs, train_loss, 'b-', label='Perda de Treino')
+    plt.plot(epochs, val_loss, 'r-', label='Perda de Validação')
+    
+    plt.title('Curva de Aprendizado (Loss vs. Épocas)')
+    plt.xlabel('Épocas')
+    plt.ylabel('Perda (Log Loss)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+        print(f"Curva de aprendizado salva em: {save_path}")
+    plt.show()
 
 def plot_model_comparison(results_df, save_path=None):
     """
