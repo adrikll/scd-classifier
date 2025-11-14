@@ -2,12 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 
-print("Iniciando script para geração de datasets por limiar (Versão 2 - Lógica <= T)...")
-
-# --- 1. CONFIGURAÇÕES ---
-
 DIRETORIO_DADOS = 'dados'
-ARQUIVO_ENTRADA = 'chagas_final_com_time.xlsx'
+ARQUIVO_ENTRADA = 'chagas_data_msc_time.xlsx'
 
 COLUNA_EVENTO = 'Obito_MS'
 COLUNA_TEMPO = 'Time_Calculado_Anos' 
@@ -25,8 +21,6 @@ except FileNotFoundError:
 except Exception as e:
     print(f"ERRO ao ler '{caminho_entrada}': {e}"); exit()
 
-# --- 3. CRIAR TODAS AS COLUNAS-ALVO (LÓGICA <= T) ---
-
 print("Criando colunas-alvo para cada limiar...")
 
 df_processado = df_base.copy()
@@ -36,20 +30,14 @@ for T in LIMIARES_ANOS:
     nova_coluna = f'Target_FU_{T}_Anos'
     novas_colunas_alvo.append(nova_coluna)
     
-    # --- LÓGICA ALTERADA ---
-    # Classe 1: Evento (Obito_MS=1) E tempo MENOR OU IGUAL (<=) ao limiar T
     condicao_positiva = (df_processado[COLUNA_EVENTO] == 1) & (df_processado[COLUNA_TEMPO] <= T)
     
-    # Classe 0: Todos os outros
-    # (Obito_MS=0) OU (Evento ocorreu DEPOIS (>) do limiar T)
     df_processado[nova_coluna] = np.where(condicao_positiva, 1, 0)
-    # --- FIM DA ALTERAÇÃO ---
     
     print(f"\n  - Limiar {T} anos ({nova_coluna}):")
     print(f"    Classe 1 (Evento <= {T} anos): {df_processado[nova_coluna].sum()} pacientes")
     print(f"    Classe 0 (Outros):          {(df_processado[nova_coluna] == 0).sum()} pacientes")
 
-# --- 4. VERIFICAÇÃO ESPECIAL PARA T=5 ---
 if 5 in LIMIARES_ANOS:
     print("\n--- Verificação Especial (T=5) ---")
     nova_contagem_5a = df_processado['Target_FU_5_Anos'].sum()
@@ -65,8 +53,6 @@ if 5 in LIMIARES_ANOS:
             print("Isso significa que a coluna 'Obito_MS_FU-5 years' foi criada com uma lógica diferente.")
     else:
         print("Coluna 'Obito_MS_FU-5 years' não encontrada para verificação.")
-
-# --- 5. SALVAR CADA DATASET SEPARADAMENTE ---
 
 print("\nSalvando os 4 datasets...")
 

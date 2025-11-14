@@ -13,7 +13,6 @@ from scipy.stats import randint, uniform
 import warnings
 warnings.filterwarnings('ignore')
 
-#General Settings
 RANDOM_STATE = 42
 CV_SPLITS = 5
 TEST_SIZE = 0.2
@@ -21,17 +20,15 @@ N_ITER_RANDOM_SEARCH = 200
 MODEL_PREFIX = "clf"
 K_KEY = "select__k"
 
-#Path Settings
-DATA_PATH = 'dados/chagas_limiar_10_anos.xlsx'
-RESULTS_PATH = 'results_10_anos'
+DATA_PATH = 'dados/chagas_limiar_7_anos.xlsx'
+RESULTS_PATH = 'results_7_anos'
 
-#Model Config
-TARGET_COLUMN = 'Target_FU_10_Anos'
+TARGET_COLUMN = 'Target_FU_7_Anos'
 DROP_COLUMNS = [
-    'ID', 'Name', 'FE', 'Filename', 'Obito_MS', 'Time', 
+    'ID', 'Name', 'FE', 'Filename', 'Obito_MS', 'Time', #Age
     'Date Holter', 'Sex', 'Nat', 'Event (FU-5 years)', 'Rassi Score', 
     'Rassi Points', 'Classe_FE', 'Data_MSC_Extraida',
-    'Time_Calculado_Anos', 'Obito_MS_FU-5 years', 'Target_FU_10_Anos'
+    'Time_Calculado_Anos', 'Obito_MS_FU-5 years', 'Target_FU_7_Anos'
 ]
 
 MODELS_CONFIG = [
@@ -70,19 +67,19 @@ MODELS_CONFIG = [
             'clf__colsample_bytree': [0.8, 0.9, 1.0],
         }
     },
-    {
-        'name': 'LightGBM',
-        'estimator': LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
-        'param_grid': {
-            'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
-            'clf__n_estimators': [100, 200, 300],
-            'clf__learning_rate': [0.01, 0.05, 0.1],
-            'clf__num_leaves': [20, 31, 40], 
-            'clf__max_depth': [-1, 10, 20], 
-            'clf__subsample': [0.8, 0.9, 1.0],
-            'clf__colsample_bytree': [0.8, 0.9, 1.0],
-        }
-    },
+    # {
+    #     'name': 'LightGBM',
+    #     'estimator': LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
+    #     'param_grid': {
+    #         'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
+    #         'clf__n_estimators': [100, 200, 300],
+    #         'clf__learning_rate': [0.01, 0.05, 0.1],
+    #         'clf__num_leaves': [20, 31, 40], 
+    #         'clf__max_depth': [-1, 10, 20], 
+    #         'clf__subsample': [0.8, 0.9, 1.0],
+    #         'clf__colsample_bytree': [0.8, 0.9, 1.0],
+    #     }
+    # },
     {
         'name': 'MLPClassifier',
         'estimator': MLPClassifier(random_state=RANDOM_STATE, max_iter=2000),
