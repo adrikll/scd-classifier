@@ -1,0 +1,51 @@
+{
+    "model_name": "RandomForest",
+    "best_k_features": 10,
+    "optimal_threshold": "0.3900",
+    "best_hyperparameters": {
+        "n_estimators": 100,
+        "min_samples_leaf": 1,
+        "max_features": "sqrt",
+        "max_depth": 20,
+        "criterion": "gini"
+    },
+    "selected_features": [
+        "QRS_dur_5th",
+        "QRS_dur_25th",
+        "TpTe_75th",
+        "TpTe_98th",
+        "TpTe_RRI1",
+        "Qtend/TendQ 98th",
+        "QTpico/TpicoQ 98th",
+        "HRV_MFDFA_alpha2_Max",
+        "std_HRV_LFHF",
+        "std_HRV_MFDFA_alpha2_Asymmetry"
+    ],
+    "classification_report_dict": {
+        "0": {
+            "precision": 0.7894736842105263,
+            "recall": 0.6521739130434783,
+            "f1-score": 0.7142857142857143,
+            "support": 23.0
+        },
+        "1": {
+            "precision": 0.5294117647058824,
+            "recall": 0.6923076923076923,
+            "f1-score": 0.6,
+            "support": 13.0
+        },
+        "accuracy": 0.6666666666666666,
+        "macro avg": {
+            "precision": 0.6594427244582044,
+            "recall": 0.6722408026755853,
+            "f1-score": 0.6571428571428571,
+            "support": 36.0
+        },
+        "weighted avg": {
+            "precision": 0.695562435500516,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.6730158730158731,
+            "support": 36.0
+        }
+    }
+}

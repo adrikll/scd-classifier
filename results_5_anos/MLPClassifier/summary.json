@@ -1,0 +1,103 @@
+{
+    "model_name": "MLPClassifier",
+    "best_k_features": 60,
+    "optimal_threshold": "0.3800",
+    "best_hyperparameters": {
+        "solver": "adam",
+        "learning_rate": "constant",
+        "hidden_layer_sizes": [
+            50
+        ],
+        "alpha": 0.001,
+        "activation": "tanh"
+    },
+    "selected_features": [
+        "RR 5th",
+        "\u2206\u03b1_QT",
+        "\u2206\u03b1_QTpico",
+        "TpicoQ_5th",
+        "TpicoQ_25th",
+        "TendQ_5th",
+        "TendQ_25th",
+        "D_TpTe",
+        "\u2206\u03b1_TpTe",
+        "Median Qtend/TendQ",
+        "Qtend/TendQ 5th",
+        "Qtend/TendQ 25th",
+        "Qtend/TendQ 75th",
+        "Qtend/TendQ 98th",
+        "Median QTPico/TPicoQ",
+        "QTPico/TPicoQ 25th",
+        "QTpico/TpicoQ 75th",
+        "QTpico/TpicoQ 98th",
+        "Perc QTend TendQ > 1",
+        "Perc QTpico TpicoQ > 1",
+        "HRV_SDANN1",
+        "HRV_SDANN2",
+        "HRV_RMSSD",
+        "HRV_SDSD",
+        "HRV_MinNN",
+        "HRV_SD1",
+        "HRV_S",
+        "HRV_PI",
+        "HRV_SD1d",
+        "HRV_SD1a",
+        "HRV_MFDFA_alpha1_Width",
+        "HRV_MFDFA_alpha2_Max",
+        "HRV_MFDFA_alpha2_Fluctuation",
+        "HRV_MFDFA_alpha2_Increment",
+        "std_HRV_SDNN",
+        "std_HRV_SDANN1",
+        "std_HRV_SDNNI1",
+        "std_HRV_SDANN2",
+        "std_HRV_RMSSD",
+        "std_HRV_SDSD",
+        "std_HRV_MaxNN",
+        "std_HRV_VLF",
+        "std_HRV_HF",
+        "std_HRV_TP",
+        "std_HRV_SD1",
+        "std_HRV_SD2",
+        "std_HRV_S",
+        "std_HRV_CSI_Modified",
+        "std_HRV_SD1d",
+        "std_HRV_SD1a",
+        "std_HRV_SD2d",
+        "std_HRV_SD2a",
+        "std_HRV_SDNNd",
+        "std_HRV_SDNNa",
+        "std_HRV_MFDFA_alpha1_Max",
+        "std_HRV_MFDFA_alpha2_Width",
+        "std_HRV_MFDFA_alpha2_Peak",
+        "std_HRV_MFDFA_alpha2_Asymmetry",
+        "std_HRV_MFDFA_alpha2_Fluctuation",
+        "std_HRV_MFDFA_alpha2_Increment"
+    ],
+    "classification_report_dict": {
+        "0": {
+            "precision": 0.7037037037037037,
+            "recall": 0.76,
+            "f1-score": 0.7307692307692307,
+            "support": 25.0
+        },
+        "1": {
+            "precision": 0.3333333333333333,
+            "recall": 0.2727272727272727,
+            "f1-score": 0.3,
+            "support": 11.0
+        },
+        "accuracy": 0.6111111111111112,
+        "macro avg": {
+            "precision": 0.5185185185185185,
+            "recall": 0.5163636363636364,
+            "f1-score": 0.5153846153846153,
+            "support": 36.0
+        },
+        "weighted avg": {
+            "precision": 0.5905349794238683,
+            "recall": 0.6111111111111112,
+            "f1-score": 0.5991452991452991,
+            "support": 36.0
+        }
+    }
+}

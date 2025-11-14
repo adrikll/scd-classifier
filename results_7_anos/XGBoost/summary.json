@@ -1,0 +1,61 @@
+{
+    "model_name": "XGBoost",
+    "best_k_features": 20,
+    "optimal_threshold": "0.4300",
+    "best_hyperparameters": {
+        "subsample": 0.9,
+        "n_estimators": 100,
+        "max_depth": 5,
+        "learning_rate": 0.01,
+        "colsample_bytree": 0.9
+    },
+    "selected_features": [
+        "TpicoQ_5th",
+        "TendQ_5th",
+        "Qtend/TendQ 75th",
+        "Qtend/TendQ 98th",
+        "QTpico/TpicoQ 75th",
+        "QTpico/TpicoQ 98th",
+        "Perc QTpico TpicoQ > 1",
+        "HRV_PI",
+        "HRV_MFDFA_alpha2_Max",
+        "std_HRV_SDNN",
+        "std_HRV_RMSSD",
+        "std_HRV_SDSD",
+        "std_HRV_SD1",
+        "std_HRV_S",
+        "std_HRV_SD1d",
+        "std_HRV_SD1a",
+        "std_HRV_SD2d",
+        "std_HRV_SDNNd",
+        "std_HRV_MFDFA_alpha2_Peak",
+        "std_HRV_MFDFA_alpha2_Asymmetry"
+    ],
+    "classification_report_dict": {
+        "0": {
+            "precision": 0.7,
+            "recall": 0.5833333333333334,
+            "f1-score": 0.6363636363636364,
+            "support": 24.0
+        },
+        "1": {
+            "precision": 0.375,
+            "recall": 0.5,
+            "f1-score": 0.42857142857142855,
+            "support": 12.0
+        },
+        "accuracy": 0.5555555555555556,
+        "macro avg": {
+            "precision": 0.5375,
+            "recall": 0.5416666666666667,
+            "f1-score": 0.5324675324675324,
+            "support": 36.0
+        },
+        "weighted avg": {
+            "precision": 0.5916666666666666,
+            "recall": 0.5555555555555556,
+            "f1-score": 0.5670995670995671,
+            "support": 36.0
+        }
+    }
+}

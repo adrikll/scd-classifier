@@ -7,7 +7,6 @@ from sklearn.inspection import permutation_importance
 import os
 import joblib
 import json
-from upsetplot import from_contents, plot
 
 from .utils import gmean_scorer
 from . import config

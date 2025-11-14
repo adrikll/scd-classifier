@@ -1,0 +1,64 @@
+{
+    "model_name": "MLPClassifier",
+    "best_k_features": 20,
+    "optimal_threshold": "0.3100",
+    "best_hyperparameters": {
+        "solver": "adam",
+        "learning_rate": "constant",
+        "hidden_layer_sizes": [
+            50,
+            25
+        ],
+        "alpha": 0.0001,
+        "activation": "relu"
+    },
+    "selected_features": [
+        "QRS_dur_5th",
+        "QRS_dur_25th",
+        "TpTe_75th",
+        "TpTe_98th",
+        "TpTe_RRI1",
+        "Qtend/TendQ 98th",
+        "QTpico/TpicoQ 98th",
+        "Perc QTpico TpicoQ > 1",
+        "HRV_SDANN2",
+        "HRV_RMSSD",
+        "HRV_SDSD",
+        "HRV_CVSD",
+        "HRV_SD1",
+        "HRV_SD1a",
+        "HRV_SDNNa",
+        "HRV_MFDFA_alpha2_Max",
+        "std_HRV_SDANN2",
+        "std_HRV_LFHF",
+        "std_HRV_SD1a",
+        "std_HRV_MFDFA_alpha2_Asymmetry"
+    ],
+    "classification_report_dict": {
+        "0": {
+            "precision": 0.5714285714285714,
+            "recall": 0.5217391304347826,
+            "f1-score": 0.5454545454545454,
+            "support": 23.0
+        },
+        "1": {
+            "precision": 0.26666666666666666,
+            "recall": 0.3076923076923077,
+            "f1-score": 0.2857142857142857,
+            "support": 13.0
+        },
+        "accuracy": 0.4444444444444444,
+        "macro avg": {
+            "precision": 0.419047619047619,
+            "recall": 0.41471571906354515,
+            "f1-score": 0.41558441558441556,
+            "support": 36.0
+        },
+        "weighted avg": {
+            "precision": 0.46137566137566133,
+            "recall": 0.4444444444444444,
+            "f1-score": 0.45165945165945165,
+            "support": 36.0
+        }
+    }
+}

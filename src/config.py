@@ -22,15 +22,16 @@ MODEL_PREFIX = "clf"
 K_KEY = "select__k"
 
 #Path Settings
-DATA_PATH = 'dados/chagas_all_features.xlsx'
-RESULTS_PATH = 'results'
+DATA_PATH = 'dados/chagas_limiar_10_anos.xlsx'
+RESULTS_PATH = 'results_10_anos'
 
 #Model Config
-TARGET_COLUMN = 'Obito_MS_FU-5 years'
+TARGET_COLUMN = 'Target_FU_10_Anos'
 DROP_COLUMNS = [
-    'ID', 'Name', 'FE', 'Filename', 'Age', 'Obito_MS', 'Time', 
+    'ID', 'Name', 'FE', 'Filename', 'Obito_MS', 'Time', 
     'Date Holter', 'Sex', 'Nat', 'Event (FU-5 years)', 'Rassi Score', 
-    'Rassi Points', 'Classe_FE', 'Obito_MS_FU-5 years'
+    'Rassi Points', 'Classe_FE', 'Data_MSC_Extraida',
+    'Time_Calculado_Anos', 'Obito_MS_FU-5 years', 'Target_FU_10_Anos'
 ]
 
 MODELS_CONFIG = [
