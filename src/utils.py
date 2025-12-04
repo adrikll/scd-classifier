@@ -97,9 +97,9 @@ def plot_confusion_matrix(y_true, y_pred, title="Matriz de Confusão", save_path
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 5))
     
-    gradiente_laranja_suave = sns.light_palette("orange", as_cmap=True)
+    gradiente_azul = sns.light_palette("blue", as_cmap=True)
     
-    sns.heatmap(cm, annot=True, fmt="d", cmap=gradiente_laranja_suave, cbar=False, annot_kws={"size": 16})
+    sns.heatmap(cm, annot=True, fmt="d", cmap=gradiente_azul, cbar=False, annot_kws={"size": 16})
     
     plt.title(title, fontsize=16)
     plt.xlabel("Previsto", fontsize=12)

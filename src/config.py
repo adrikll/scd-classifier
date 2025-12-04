@@ -7,12 +7,13 @@ from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.svm import SVC
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from scipy.stats import randint, uniform
 
 import warnings
 warnings.filterwarnings('ignore')
 
+#General Settings
 RANDOM_STATE = 42
 CV_SPLITS = 5
 TEST_SIZE = 0.2
@@ -20,15 +21,14 @@ N_ITER_RANDOM_SEARCH = 200
 MODEL_PREFIX = "clf"
 K_KEY = "select__k"
 
-DATA_PATH = 'dados/chagas_limiar_7_anos.xlsx'
-RESULTS_PATH = 'results_7_anos'
+RESULTS_PATH = 'results'
 
-TARGET_COLUMN = 'Target_FU_7_Anos'
+#Model Config
+TARGET_COLUMN = 'Target'
 DROP_COLUMNS = [
-    'ID', 'Name', 'FE', 'Filename', 'Obito_MS', 'Time', #Age
-    'Date Holter', 'Sex', 'Nat', 'Event (FU-5 years)', 'Rassi Score', 
-    'Rassi Points', 'Classe_FE', 'Data_MSC_Extraida',
-    'Time_Calculado_Anos', 'Obito_MS_FU-5 years', 'Target_FU_7_Anos'
+    'ID', 'Name', 'Filename', 'Date Holter', 'Time', 'Nat', 'Event (FU-5 years)', 'Obito_MS', 'Obito_MS_FU-5 years',
+    'Rassi Points', 'Rassi Score', 'FE', 'Classe_FE', 'Data_MSC', 'Tempo',
+    'Ins Cardiaca', 'TVMNS.1', 'AE diam.',
 ]
 
 MODELS_CONFIG = [
@@ -67,19 +67,19 @@ MODELS_CONFIG = [
             'clf__colsample_bytree': [0.8, 0.9, 1.0],
         }
     },
-    # {
-    #     'name': 'LightGBM',
-    #     'estimator': LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
-    #     'param_grid': {
-    #         'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
-    #         'clf__n_estimators': [100, 200, 300],
-    #         'clf__learning_rate': [0.01, 0.05, 0.1],
-    #         'clf__num_leaves': [20, 31, 40], 
-    #         'clf__max_depth': [-1, 10, 20], 
-    #         'clf__subsample': [0.8, 0.9, 1.0],
-    #         'clf__colsample_bytree': [0.8, 0.9, 1.0],
-    #     }
-    # },
+    {
+        'name': 'LightGBM',
+        'estimator': LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
+        'param_grid': {
+            'select__k': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 180, 200, 220, 239],
+            'clf__n_estimators': [100, 200, 300],
+            'clf__learning_rate': [0.01, 0.05, 0.1],
+            'clf__num_leaves': [20, 31, 40], 
+            'clf__max_depth': [-1, 10, 20], 
+            'clf__subsample': [0.8, 0.9, 1.0],
+            'clf__colsample_bytree': [0.8, 0.9, 1.0],
+        }
+    },
     {
         'name': 'MLPClassifier',
         'estimator': MLPClassifier(random_state=RANDOM_STATE, max_iter=2000),
@@ -94,4 +94,4 @@ MODELS_CONFIG = [
     }
 ]
 
-SELECTOR = SelectKBest(f_classif)
+SELECTOR = SelectKBest(mutual_info_classif)
