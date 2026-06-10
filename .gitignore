@@ -7,5 +7,5 @@ results/
 .idea/
 .DS_Store
 Thumbs.db
-analysis.py
+analysis.ipynb
 notes.md
